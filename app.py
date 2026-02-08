@@ -20,21 +20,37 @@ def get_stock_price(symbol):
     }
 
 
-app=Flask(__name__)
+def get_six_month_return(symbol):
+    ticker = yf.Ticker(symbol)
+
+    hist = ticker.history(period="6mo", auto_adjust=True)
+
+    start_price = hist['Close'].iloc[0]
+    end_price = hist['Close'].iloc[-1]
+
+    percentage_return = ((end_price - start_price) / start_price) * 100
+
+    return round(percentage_return, 2)
+
+
+app = Flask(__name__)
+
 
 @app.route("/", methods=["GET"])
 def index():
     return redirect(url_for("login"), 302)
 
+
 @app.route("/login", methods=["GET"])
 def login():
     return render_template("login.html")
+
 
 @app.route("/main", methods=["GET", "POST"])
 def main():
     name = request.form.get("name")
     stock = request.form.get("stock")
-    interest = request.form.get("interest")
+    interest = float(request.form.get("interest"))
 
     api_key = os.getenv("GEMINI_API_KEY")
     client = genai.Client(api_key=api_key)
@@ -57,12 +73,32 @@ def main():
 
     try:
         stock_price = get_stock_price(ticker)
+        symbol = stock_price["symbol"]
+        price = round(stock_price["price"],2)
+        currency = stock_price["currency"]
+        six_month_return = get_six_month_return(ticker)
     except:
-        stock_price = "not found"
         return "Financial information could not be extracted. Please try again later."
 
+    if six_month_return > interest:
+        better_investment = stock
+        difference = six_month_return - interest
+    else:
+        better_investment = "Your current savings plan"
+        difference = interest - six_month_return
 
-    return render_template("main.html", name=name, stock=stock, interest=interest, industry=industry, price=stock_price)
+    return render_template("main.html",
+                           name = name,
+                           stock = stock,
+                           interest = interest,
+                           industry = industry,
+                           symbol = symbol,
+                           price = price,
+                           currency = currency,
+                           stock_return = six_month_return,
+                           better_investment = better_investment,
+                           difference = difference)
+
 
 if __name__ == "__main__":
     app.run(debug=True)
