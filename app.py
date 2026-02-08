@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, jsonify, redirect, url_for
+from flask import Flask, request, render_template, redirect, url_for
 from google import genai
 from dotenv import load_dotenv
 import os
@@ -8,7 +8,6 @@ import numpy as np
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 
 load_dotenv()
-
 
 def get_stock_price(symbol):
     ticker = yf.Ticker(symbol)
@@ -37,31 +36,22 @@ def get_six_month_return(symbol):
 
 
 def get_overall_news_sentiment(news_list):
-    """
-    Returns a single float (-1.0 to 1.0) representing the average sentiment
-    of all news articles provided.
-    """
     if not news_list:
         return 0.0
 
-    # Initialize VADER once (more efficient)
     analyzer = SentimentIntensityAnalyzer()
     scores = []
 
     for article in news_list:
-        # Safe extraction: prevents crashes if 'description' or 'content' is None
         title = article.get('title') or ""
         desc = article.get('description') or ""
         content = article.get('content') or ""
 
-        # Combine text
         full_text = f"{title} {desc} {content}"
 
-        # Get ONLY the compound score (The one number you need)
         score = analyzer.polarity_scores(full_text)['compound']
         scores.append(score)
 
-    # Return the simple average
     return np.mean(scores)
 
 
@@ -156,7 +146,6 @@ def main():
     # News Sentiment Analysis
     company_news_sentiment = get_overall_news_sentiment(company_news)
     company_news_sentiment_scaled = int((company_news_sentiment + 1) * 50)
-
 
     industry_news_sentiment = get_overall_news_sentiment(industry_news)
     industry_news_sentiment_scaled = int((industry_news_sentiment + 1) * 50)
