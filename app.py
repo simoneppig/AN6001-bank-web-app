@@ -161,6 +161,28 @@ def main():
     industry_news_sentiment = get_overall_news_sentiment(industry_news)
     industry_news_sentiment_scaled = int((industry_news_sentiment + 1) * 50)
 
+    # AI Summary
+    summary_info = {
+        "company": stock,
+        "symbol": symbol,
+        "industry": industry,
+        "current_stock_price": price,
+        "stock_price_currency": currency,
+        "six_month_stock_return": six_month_return,
+        "users_current_savings_plan_interest": interest,
+        "difference_between_current_plan_and_stock_return": difference,
+        "better_investment_over_last_six_months": better_investment,
+        "company_news_articles": company_news,
+        "company_news_sentiment_from_zero_to_hundred": company_news_sentiment_scaled,
+        "industry_news_articles": industry_news,
+        "industry_news_sentiment_from_zero_to_hundred": industry_news_sentiment_scaled
+    }
+
+    summary = client.models.generate_content(
+        model="gemma-3-27b-it",
+        contents=f"You are a personal banking support assistant. Your task is to provide a one paragraph summary of the market situation for a company and industry for the user to make financial decisions. However, you are not supposed to give actual financial advice, just give the user enough information to make the decision themselves. Here is the information you should base you summary on: {summary_info}"
+    ).candidates[0].content.parts[0].text
+
     return render_template("main.html",
                            name = name,
                            stock = stock,
@@ -175,7 +197,8 @@ def main():
                            company_news = company_news,
                            company_news_sentiment = company_news_sentiment_scaled,
                            industry_news_sentiment = industry_news_sentiment_scaled,
-                           industry_news = industry_news
+                           industry_news = industry_news,
+                           summary = summary
                            )
 
 
