@@ -109,9 +109,9 @@
                 </div>
                 <div class="sentiment-bar-container">
                     <div class="sentiment-bar-fill" style="width: {{company_news_sentiment}}%;">
-                        {% if company_news_sentiment >= 60 %}
+                        {% if company_news_sentiment >= 70 %}
                             Positive 😊
-                        {% elif company_news_sentiment >= 40 %}
+                        {% elif company_news_sentiment >= 50 %}
                             Neutral 😐
                         {% else %}
                             Negative 😟
@@ -153,7 +153,7 @@
                     <div class="sentiment-bar-fill" style="width: {{industry_news_sentiment}}%;">
                         {% if industry_news_sentiment >= 70 %}
                             Positive 😊
-                        {% elif industry_news_sentiment >= 40 %}
+                        {% elif industry_news_sentiment >= 50 %}
                             Neutral 😐
                         {% else %}
                             Negative 😟
