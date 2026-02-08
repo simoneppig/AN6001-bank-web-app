@@ -6,27 +6,39 @@
 </head>
 <body>
     <p>Name: {{name}}</p>
-    <p>Stock: {{stock}}</p>
     <p>Current Interest: {{interest}}%</p>
+
+    <br>
+
+    <p>Stock: {{stock}}</p>
     <p>Industry: {{industry}}</p>
     <p>Symbol: {{symbol}}</p>
     <p>Price: {{price}}</p>
     <p>Currency: {{currency}}</p>
     <p>Six Month Return: {{stock_return}}%</p>
     <p>Better Investment: {{better_investment}} with a difference of {{difference}} percentage points</p>
+
     <br>
+
     <p>Company News:</p>
+    <p>Sentiment: {{company_news_sentiment}} / 100</p>
+
     {% for article in company_news %}
     <p><a href="{{ article.url }}" target="_blank">{{ article.title }}</a></p>
     <p>{{ article.source }}</p>
     <p>{{ article.publishedAt }}</p>
     {% endfor %}
+
     <br>
+
     <p>Industry News:</p>
+    <p>Sentiment: {{industry_news_sentiment}} / 100</p>
+
     {% for article in industry_news %}
     <p><a href="{{ article.url }}" target="_blank">{{ article.title }}</a></p>
     <p>{{ article.source }}</p>
     <p>{{ article.publishedAt }}</p>
     {% endfor %}
+
 </body>
 </html>
