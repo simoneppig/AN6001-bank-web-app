@@ -85,7 +85,7 @@ def main():
     ).candidates[0].content.parts[0].text
 
     if industry.strip() == "not found":
-        return "Company not found."
+        return render_template("error.html", error_message="Company not found.")
 
     ticker = client.models.generate_content(
         model="gemma-3-27b-it",
@@ -93,7 +93,7 @@ def main():
     ).candidates[0].content.parts[0].text
 
     if ticker.strip() == "not found":
-        return "Company is not publicly listed."
+        return render_template("error.html", error_message="Company is not publicly listed.")
 
     # Use Yahoo Finance to get financial information
     try:
@@ -103,14 +103,14 @@ def main():
         currency = stock_price["currency"]
         six_month_return = get_six_month_return(ticker)
     except:
-        return "Financial information could not be extracted. Please try again later."
+        return render_template("error.html", error_message="Financial information could not be extracted. Please try again later.")
 
     if six_month_return > interest:
         better_investment = stock
-        difference = six_month_return - interest
+        difference = round((six_month_return - interest),2)
     else:
         better_investment = "Your current savings plan"
-        difference = interest - six_month_return
+        difference = round((interest - six_month_return),2)
 
     # Use News API to get news articles
     news_api_key = os.getenv("NEWS_API_KEY")
