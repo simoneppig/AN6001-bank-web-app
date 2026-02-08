@@ -2,48 +2,180 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Main</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Investment Analysis - {{stock}}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
 </head>
 <body>
-    <p>Name: {{name}}</p>
-    <p>Current Interest: {{interest}}%</p>
+    <!-- Header -->
+    <div class="header">
+        <div class="header-content">
+            <div class="header-left">
+                <h1>👋 Welcome back, {{name}}!</h1>
+                <p>Investment Analysis: {{stock}} vs Your Savings Plan ({{interest}}%)</p>
+            </div>
+            <a href="/" class="back-btn">← New Analysis</a>
+        </div>
+    </div>
 
-    <br>
+    <div class="container">
+        <!-- AI Summary Card -->
+        <div class="card summary-card">
+            <div class="card-header">
+                <span class="card-icon">🤖</span>
+                <h2>AI-Powered Investment Summary</h2>
+            </div>
+            <p class="summary-text">{{summary}}</p>
+        </div>
 
-    <p>AI Summary:</p>
-    <p>{{summary}}</p>
+        <!-- Stock Metrics Card -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-icon">📊</span>
+                <h2>Stock Performance Metrics</h2>
+            </div>
+            
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-label">Company</div>
+                    <div class="metric-value">{{stock}}</div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="metric-label">Industry</div>
+                    <div class="metric-value">{{industry}}</div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="metric-label">Ticker Symbol</div>
+                    <div class="metric-value">{{symbol}}</div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="metric-label">Current Price</div>
+                    <div class="metric-value">
+                        <span>{{currency}}</span>
+                        <span>{{price}}</span>
+                    </div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="metric-label">6-Month Return</div>
+                    <div class="metric-value {% if stock_return > 0 %}positive{% else %}negative{% endif %}">
+                        {{stock_return}}%
+                    </div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="metric-label">Your Savings Rate</div>
+                    <div class="metric-value">{{interest}}%</div>
+                </div>
+            </div>
 
-    <br>
+            <!-- Comparison Section -->
+            <div class="comparison-section">
+                <div class="comparison-title">
+                    <span>🏆</span>
+                    <span>Better Investment (Last 6 Months)</span>
+                </div>
+                <div>
+                    <span class="winner-badge">
+                        {% if better_investment == stock %}
+                            📈 {{better_investment}} Stock
+                        {% else %}
+                            💰 {{better_investment}}
+                        {% endif %}
+                    </span>
+                </div>
+                <p class="difference-text">
+                    <strong>Performance Difference:</strong> {{difference}} percentage points
+                </p>
+            </div>
+        </div>
 
-    <p>Stock: {{stock}}</p>
-    <p>Industry: {{industry}}</p>
-    <p>Symbol: {{symbol}}</p>
-    <p>Price: {{price}}</p>
-    <p>Currency: {{currency}}</p>
-    <p>Six Month Return: {{stock_return}}%</p>
-    <p>Better Investment: {{better_investment}} with a difference of {{difference}} percentage points</p>
+        <!-- Company News & Sentiment -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-icon">📰</span>
+                <h2>{{stock}} - Recent News & Sentiment</h2>
+            </div>
+            
+            <div class="sentiment-section">
+                <div class="sentiment-header">
+                    <span class="sentiment-label">Overall Market Sentiment</span>
+                    <span class="sentiment-score" style="color: {% if company_news_sentiment >= 60 %}#48bb78{% elif company_news_sentiment >= 40 %}#ecc94b{% else %}#f56565{% endif %}">
+                        {{company_news_sentiment}}/100
+                    </span>
+                </div>
+                <div class="sentiment-bar-container">
+                    <div class="sentiment-bar-fill" style="width: {{company_news_sentiment}}%;">
+                        {% if company_news_sentiment >= 60 %}
+                            Positive 😊
+                        {% elif company_news_sentiment >= 40 %}
+                            Neutral 😐
+                        {% else %}
+                            Negative 😟
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
 
-    <br>
+            <div class="news-grid">
+                {% for article in company_news %}
+                <div class="news-card">
+                    <a href="{{ article.url }}" target="_blank" class="news-title">
+                        {{ article.title }}
+                    </a>
+                    <div class="news-meta">
+                        <span class="news-source">📌 {{ article.source }}</span>
+                        <span class="news-date">🕐 {{ article.publishedAt[:10] }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
 
-    <p>Company News:</p>
-    <p>Sentiment: {{company_news_sentiment}} / 100</p>
+        <!-- Industry News & Sentiment -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-icon">🏭</span>
+                <h2>{{industry}} Industry - Market Trends</h2>
+            </div>
+            
+            <div class="sentiment-section">
+                <div class="sentiment-header">
+                    <span class="sentiment-label">Industry Sentiment Score</span>
+                    <span class="sentiment-score" style="color: {% if industry_news_sentiment >= 60 %}#48bb78{% elif industry_news_sentiment >= 40 %}#ecc94b{% else %}#f56565{% endif %}">
+                        {{industry_news_sentiment}}/100
+                    </span>
+                </div>
+                <div class="sentiment-bar-container">
+                    <div class="sentiment-bar-fill" style="width: {{industry_news_sentiment}}%;">
+                        {% if industry_news_sentiment >= 60 %}
+                            Positive 😊
+                        {% elif industry_news_sentiment >= 40 %}
+                            Neutral 😐
+                        {% else %}
+                            Negative 😟
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
 
-    {% for article in company_news %}
-    <p><a href="{{ article.url }}" target="_blank">{{ article.title }}</a></p>
-    <p>{{ article.source }}</p>
-    <p>{{ article.publishedAt }}</p>
-    {% endfor %}
-
-    <br>
-
-    <p>Industry News:</p>
-    <p>Sentiment: {{industry_news_sentiment}} / 100</p>
-
-    {% for article in industry_news %}
-    <p><a href="{{ article.url }}" target="_blank">{{ article.title }}</a></p>
-    <p>{{ article.source }}</p>
-    <p>{{ article.publishedAt }}</p>
-    {% endfor %}
-
+            <div class="news-grid">
+                {% for article in industry_news %}
+                <div class="news-card">
+                    <a href="{{ article.url }}" target="_blank" class="news-title">
+                        {{ article.title }}
+                    </a>
+                    <div class="news-meta">
+                        <span class="news-source">📌 {{ article.source }}</span>
+                        <span class="news-date">🕐 {{ article.publishedAt[:10] }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
 </body>
 </html>

@@ -2,17 +2,35 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Login</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Investment Analyzer - Login</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
 </head>
 <body>
-    <form action="/main" method="post">
-        <p>Name</p>
-        <input type ="text" name="name" required>
-        <p>Stock</p>
-        <input type ="text" name="stock" required>
-        <p>Current Interest</p>
-        <input type ="number" step="0.01" name="interest" required>
-        <input type="submit" value="Enter">
-    </form>
+    <div class="login-container">
+        <div class="login-header">
+            <h1>💼 Investment Analyzer</h1>
+            <p>Make smarter investment decisions</p>
+        </div>
+        
+        <form action="/main" method="post">
+            <div class="form-group">
+                <label for="name">Your Name</label>
+                <input type="text" id="name" name="name" placeholder="Enter your name" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="stock">Company Name</label>
+                <input type="text" id="stock" name="stock" placeholder="e.g., Apple, Microsoft, Tesla" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="interest">Current Savings Interest (%)</label>
+                <input type="number" id="interest" step="0.01" name="interest" placeholder="e.g., 3.5" required>
+            </div>
+            
+            <button type="submit" class="submit-btn">Analyze Investment →</button>
+        </form>
+    </div>
 </body>
 </html>
