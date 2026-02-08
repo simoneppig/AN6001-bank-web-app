@@ -3,6 +3,7 @@ from google import genai
 from dotenv import load_dotenv
 import os
 import yfinance as yf
+import requests
 
 load_dotenv()
 
@@ -48,12 +49,14 @@ def login():
 
 @app.route("/main", methods=["GET", "POST"])
 def main():
+    # Getting user inputs
     name = request.form.get("name")
     stock = request.form.get("stock")
     interest = float(request.form.get("interest"))
 
-    api_key = os.getenv("GEMINI_API_KEY")
-    client = genai.Client(api_key=api_key)
+    # Using Gemini API to get industry and stock symbol
+    gemini_api_key = os.getenv("GEMINI_API_KEY")
+    client = genai.Client(api_key=gemini_api_key)
 
     industry = client.models.generate_content(
         model="gemma-3-27b-it",
@@ -71,6 +74,7 @@ def main():
     if ticker.strip() == "not found":
         return "Company is not publicly listed."
 
+    # Use Yahoo Finance to get financial information
     try:
         stock_price = get_stock_price(ticker)
         symbol = stock_price["symbol"]
@@ -87,6 +91,35 @@ def main():
         better_investment = "Your current savings plan"
         difference = interest - six_month_return
 
+    # Use News API to get news articles
+    news_api_key = os.getenv("NEWS_API_KEY")
+
+    company_news = []
+    query = f"{stock} OR {symbol}"
+    url = f"https://newsapi.org/v2/everything?q={query}&language=en&sortBy=publishedAt&pageSize=5&page=1&searchIn=title&apiKey={news_api_key}"
+    response = requests.get(url).json()
+    for article in response.get('articles', []):
+        company_news.append({
+            "title": article['title'],
+            "source": article['source']['name'],
+            "url": article['url'],
+            "publishedAt": article['publishedAt']
+        })
+
+    industry_news = []
+    query = industry
+    url = f"https://newsapi.org/v2/everything?q={query}&language=en&sortBy=publishedAt&pageSize=5&page=1&searchIn=title&apiKey={news_api_key}"
+    response = requests.get(url).json()
+    for article in response.get('articles', []):
+        industry_news.append({
+            "title": article['title'],
+            "source": article['source']['name'],
+            "url": article['url'],
+            "publishedAt": article['publishedAt']
+        })
+
+
+
     return render_template("main.html",
                            name = name,
                            stock = stock,
@@ -97,7 +130,10 @@ def main():
                            currency = currency,
                            stock_return = six_month_return,
                            better_investment = better_investment,
-                           difference = difference)
+                           difference = difference,
+                           company_news = company_news,
+                           industry_news = industry_news
+                           )
 
 
 if __name__ == "__main__":
