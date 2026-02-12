@@ -2,10 +2,12 @@ from flask import Flask, request, render_template, redirect, url_for
 from google import genai
 from dotenv import load_dotenv
 import os
+import json
 import yfinance as yf
 import requests
 import numpy as np
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+from concurrent.futures import ThreadPoolExecutor
 
 load_dotenv()
 
@@ -34,6 +36,56 @@ def get_six_month_return(symbol):
 
     return round(percentage_return, 2)
 
+
+def get_financial_info(symbol):
+    financial_data = {}
+
+    try:
+        stock_price = get_stock_price(symbol)
+        financial_data["symbol"] = stock_price["symbol"]
+        financial_data["price"] = round(stock_price["price"], 2)
+        financial_data["currency"] = stock_price["currency"]
+        financial_data["six_month_return"] = get_six_month_return(symbol)
+        return financial_data
+    except:
+        return "not found"
+
+def get_company_news(company_name, ticker):
+    news_api_key = os.getenv("NEWS_API_KEY")
+    company_news = []
+    query = f"{company_name} OR {ticker}"
+    url = f"https://newsapi.org/v2/everything?q={query}&language=en&sortBy=publishedAt&pageSize=5&page=1&searchIn=title&apiKey={news_api_key}"
+    response = requests.get(url).json()
+    for article in response.get('articles', []):
+        company_news.append({
+            "title": article['title'],
+            "description": article["description"],
+            "content": article["content"],
+            "source": article['source']['name'],
+            "url": article['url'],
+            "publishedAt": article['publishedAt']
+        })
+
+    return company_news
+
+
+def get_industry_news(industry):
+    news_api_key = os.getenv("NEWS_API_KEY")
+    industry_news = []
+    query = industry
+    url = f"https://newsapi.org/v2/everything?q={query}&language=en&sortBy=publishedAt&pageSize=5&page=1&searchIn=title&apiKey={news_api_key}"
+    response = requests.get(url).json()
+    for article in response.get('articles', []):
+        industry_news.append({
+            "title": article['title'],
+            "description": article["description"],
+            "content": article["content"],
+            "source": article['source']['name'],
+            "url": article['url'],
+            "publishedAt": article['publishedAt']
+        })
+
+    return industry_news
 
 def get_overall_news_sentiment(news_list):
     if not news_list:
@@ -77,33 +129,45 @@ def main():
 
     # Using Gemini API to get industry and stock symbol
     gemini_api_key = os.getenv("GEMINI_API_KEY")
+    model = "gemini-2.5-flash"
     client = genai.Client(api_key=gemini_api_key)
 
-    industry = client.models.generate_content(
-        model="gemma-3-27b-it",
-        contents=f"Please return the industry related to the following company: {stock} Only return the industry name, nothing else. If the company does not exist, return 'not found'."
+    ai_response = client.models.generate_content(
+        model=model,
+        contents=f"Please return the industry and the correct Yahoo finance symbol/ticker for the following company: {stock} Return the output strictly as a JSON object with keys 'industry' and 'ticker'. If not found, return 'not found' in the respective value."
     ).candidates[0].content.parts[0].text
+
+    clean_response = ai_response.replace("```json", "").replace("```", "").strip()
+    ai_response_json = json.loads(clean_response)
+
+    industry = ai_response_json.get("industry")
+    ticker = ai_response_json.get("ticker")
 
     if industry.strip() == "not found":
         return render_template("error.html", error_message="Company not found.")
 
-    ticker = client.models.generate_content(
-        model="gemma-3-27b-it",
-        contents=f"Please return the correct Yahoo finance symbol/ticker for the following company: {stock} Remember to return the correct suffix, e.g. .SI for Singapore, .DE for Germany, etc. (no suffix for US). Only return the symbol, nothing else. If the company does not exist or is not publicly listed, return 'not found'."
-    ).candidates[0].content.parts[0].text
-
     if ticker.strip() == "not found":
         return render_template("error.html", error_message="Company is not publicly listed.")
 
+
+    with ThreadPoolExecutor() as executor:
+        financial_data_submit = executor.submit(get_financial_info, ticker)
+        company_news_submit = executor.submit(get_company_news, stock, ticker)
+        industry_news_submit = executor.submit(get_industry_news, industry)
+
+        financial_data = financial_data_submit.result()
+        company_news = company_news_submit.result()
+        industry_news = industry_news_submit.result()
+
+
     # Use Yahoo Finance to get financial information
-    try:
-        stock_price = get_stock_price(ticker)
-        symbol = stock_price["symbol"]
-        price = round(stock_price["price"],2)
-        currency = stock_price["currency"]
-        six_month_return = get_six_month_return(ticker)
-    except:
+    if financial_data == "not found":
         return render_template("error.html", error_message="Financial information could not be extracted. Please try again later.")
+    else:
+        symbol = financial_data["symbol"]
+        price = financial_data["price"]
+        currency = financial_data["currency"]
+        six_month_return = financial_data["six_month_return"]
 
     if six_month_return > interest:
         better_investment = stock
@@ -111,37 +175,6 @@ def main():
     else:
         better_investment = "Your current savings plan"
         difference = round((interest - six_month_return),2)
-
-    # Use News API to get news articles
-    news_api_key = os.getenv("NEWS_API_KEY")
-
-    company_news = []
-    query = f"{stock} OR {symbol}"
-    url = f"https://newsapi.org/v2/everything?q={query}&language=en&sortBy=publishedAt&pageSize=5&page=1&searchIn=title&apiKey={news_api_key}"
-    response = requests.get(url).json()
-    for article in response.get('articles', []):
-        company_news.append({
-            "title": article['title'],
-            "description": article["description"],
-            "content": article["content"],
-            "source": article['source']['name'],
-            "url": article['url'],
-            "publishedAt": article['publishedAt']
-        })
-
-    industry_news = []
-    query = industry
-    url = f"https://newsapi.org/v2/everything?q={query}&language=en&sortBy=publishedAt&pageSize=5&page=1&searchIn=title&apiKey={news_api_key}"
-    response = requests.get(url).json()
-    for article in response.get('articles', []):
-        industry_news.append({
-            "title": article['title'],
-            "description": article["description"],
-            "content": article["content"],
-            "source": article['source']['name'],
-            "url": article['url'],
-            "publishedAt": article['publishedAt']
-        })
 
     # News Sentiment Analysis
     company_news_sentiment = get_overall_news_sentiment(company_news)
@@ -168,7 +201,7 @@ def main():
     }
 
     summary = client.models.generate_content(
-        model="gemma-3-27b-it",
+        model=model,
         contents=f"You are a personal banking support assistant. Your task is to provide a one paragraph summary of the market situation for a company and industry for the user to make financial decisions. However, you are not supposed to give actual financial advice, just give the user enough information to make the decision themselves. Here is the information you should base you summary on: {summary_info}"
     ).candidates[0].content.parts[0].text
 
@@ -192,4 +225,4 @@ def main():
 
 
 if __name__ == "__main__":
-    app.run(debug=False)
+    app.run(debug=True)
