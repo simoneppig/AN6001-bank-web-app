@@ -9,7 +9,11 @@ import numpy as np
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from concurrent.futures import ThreadPoolExecutor
 
+# Loading environment to retrieve the API keys
 load_dotenv()
+
+
+# Defining helper functions to be used in the main code
 
 def get_stock_price(symbol):
     ticker = yf.Ticker(symbol)
@@ -50,6 +54,7 @@ def get_financial_info(symbol):
     except:
         return "not found"
 
+
 def get_company_news(company_name, ticker):
     news_api_key = os.getenv("NEWS_API_KEY")
     company_news = []
@@ -87,6 +92,7 @@ def get_industry_news(industry):
 
     return industry_news
 
+
 def get_overall_news_sentiment(news_list):
     if not news_list:
         return 0.0
@@ -106,9 +112,10 @@ def get_overall_news_sentiment(news_list):
 
     return np.mean(scores)
 
-
+#Flask Setup
 app = Flask(__name__)
 
+# Flask pages
 
 @app.route("/", methods=["GET"])
 def index():
@@ -149,7 +156,7 @@ def main():
     if ticker.strip() == "not found":
         return render_template("error.html", error_message="Company is not publicly listed.")
 
-
+    # Parallelising external API calls to speed up loading times
     with ThreadPoolExecutor() as executor:
         financial_data_submit = executor.submit(get_financial_info, ticker)
         company_news_submit = executor.submit(get_company_news, stock, ticker)
@@ -159,8 +166,7 @@ def main():
         company_news = company_news_submit.result()
         industry_news = industry_news_submit.result()
 
-
-    # Use Yahoo Finance to get financial information
+    # Processing financial data from Yahoo Finance
     if financial_data == "not found":
         return render_template("error.html", error_message="Financial information could not be extracted. Please try again later.")
     else:
@@ -176,14 +182,14 @@ def main():
         better_investment = "Your current savings plan"
         difference = round((interest - six_month_return),2)
 
-    # News Sentiment Analysis
+    # Analysing news sentiment
     company_news_sentiment = get_overall_news_sentiment(company_news)
     company_news_sentiment_scaled = int((company_news_sentiment + 1) * 50)
 
     industry_news_sentiment = get_overall_news_sentiment(industry_news)
     industry_news_sentiment_scaled = int((industry_news_sentiment + 1) * 50)
 
-    # AI Summary
+    # Creating AI summary
     summary_info = {
         "company": stock,
         "symbol": symbol,
